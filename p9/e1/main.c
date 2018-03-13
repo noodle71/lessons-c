@@ -28,14 +28,14 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-void ReadArray (float *vector, int n);
-float ScalarProduct (float *v1, float *v2, int n);
-void PrintArray (float *v, int n);
+void ReadArray (float *pvector, int n);
+float ScalarProduct (float *pv1, float *pv2, int n);
+void PrintArray (float *pv, int n);
 
 int main(void){
   char c;
-  float *vector1;
-  float *vector2;
+  float *pvector1;
+  float *pvector2;
   int num_elements;
   float result;
   do{
@@ -49,62 +49,62 @@ int main(void){
     }while(num_elements <= 0);
 
     //Get memory for the two arrays
-    vector1 = (float *) calloc(num_elements, sizeof(float));
-    vector2 = (float *) calloc(num_elements, sizeof(float));
+    pvector1 = (float *) calloc(num_elements, sizeof(float));
+    pvector2 = (float *) calloc(num_elements, sizeof(float));
 
     //Check if we have enought memory to create those arrays
-    if(vector1 == NULL && vector2 == NULL){
+    if(pvector1 == NULL && pvector2 == NULL){
       printf("\nERROR: Don't have enought memory to create the arrays");
     }else{
       printf("\nIntroduce the values for vector 1");
-      ReadArray(vector1, num_elements);
+      ReadArray(pvector1, num_elements);
       printf("\nIntroduce the values for vector 2");
-      ReadArray(vector2, num_elements);
+      ReadArray(pvector2, num_elements);
 
       printf("\nCalculating the scalar product of the arrays:");
-      PrintArray(vector1, num_elements);
-      PrintArray(vector2, num_elements);
+      PrintArray(pvector1, num_elements);
+      PrintArray(pvector2, num_elements);
 
-      result = ScalarProduct(vector1, vector2, num_elements);
+      result = ScalarProduct(pvector1, pvector2, num_elements);
       printf("\nThe result is: %f", result);
 
       printf("\nDo you wat to continue? Press y to continue, press another key to exit: ");
       scanf(" %c", &c);
       c = tolower(c);
       //We have to release all the memory if we want to continue creating arrays
-      free(vector1);
-      free(vector2);
+      free(pvector1);
+      free(pvector2);
     }
   }while(c == 'y');
   return 0;
 }
 
-void ReadArray (float *vector, int n){
+void ReadArray (float *pvector, int n){
   int i;
   for(i = 0; i < n; i++){
     printf("\nIntroduce the element %d of the vector: ", i + 1);
     //scanf("%f", &vector[i]);
-    scanf("%f", vector + i); //This is the same as above
+    scanf("%f", pvector + i); //This is the same as above
   }
   return;
 }
 
-float ScalarProduct (float *v1, float *v2, int n){
+float ScalarProduct (float *pv1, float *pv2, int n){
   float res = 0;
   int i;
   for(i = 0; i < n; i++){
-    //res += v1[i] * v2[i];
-    res += *(v1+i) * *(v2+i); //This is the same as above
+    //res += pv1[i] * pv2[i];
+    res += *(pv1+i) * *(pv2+i); //This is the same as above
   }
   return res;
 }
 
-void PrintArray (float *v, int n){
+void PrintArray (float *pv, int n){
   int i;
   printf("\n");
   for(i = 0; i < n; i++){
-    //printf("%f\t", v[i]);
-    printf("%f\t", *(v+i)); //This is the same as above
+    //printf("%f\t", pv[i]);
+    printf("%f\t", *(pv+i)); //This is the same as above
   }
   return;
 }

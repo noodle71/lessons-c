@@ -42,32 +42,34 @@
 #define Z 122
 
 //MANTADORY FUNCTIONS
-void CountWord(char string[], int *word_length);
-void Transform(char string1[], char *string2);
+void CountWord(char string[], int *pword_length);
+void Transform(char string1[], char *pstring2);
 
 //OPTIONAL FUNCTIONS
 int CharIsLetter(char letter);
-void IndexOfSecondWord(char string[], int *index, int *length);
+void IndexOfSecondWord(char string[], int *pindex, int *plength);
 
 int main(void){
   char string1[N];
-  char *string2;
+  char *pstring2;
   int count = 0;
 
   printf("\nWrite a sentence:\n");
   fgets(string1, N, stdin);
   CountWord(string1, &count);
-  string2 = (char *)calloc(count, sizeof(char));
-  if(string2 != NULL){
+  pstring2 = (char *)calloc(count, sizeof(char));
+  if(pstring2 != NULL){
     if(count == 0){
       printf("\nERROR: These sentence doesn't have two words.\n");
     }else{
-      Transform(string1, string2); 
-      printf("\nSecond word content:\n%s\n", string2);
+      Transform(string1, pstring2); 
+      printf("\nSecond word content:\n%s\n", pstring2);
     }
   }else{
     printf("\nERROR: Not enought memory.\n");
   }
+  //Release memory
+  free(pstring2);
   return 0;
 }
 
@@ -77,9 +79,9 @@ int main(void){
  * the second word (using pointers).
  * OUTPUT: None.
  */
-void CountWord(char string[], int *word_length){
+void CountWord(char string[], int *pword_length){
   int index;
-  IndexOfSecondWord(string, &index, word_length);
+  IndexOfSecondWord(string, &index, pword_length);
   return;
 }
 
@@ -90,7 +92,7 @@ void CountWord(char string[], int *word_length){
  * there (using pointers).
  * OUTPUT: None.
  */
-void IndexOfSecondWord(char string[], int *index, int *length){
+void IndexOfSecondWord(char string[], int *pindex, int *plength){
   int previous_is_letter = 0;
   int current_is_letter;
   int word_count = 0;
@@ -103,12 +105,12 @@ void IndexOfSecondWord(char string[], int *index, int *length){
     if(current_is_letter == 1 && previous_is_letter == 0){
       word_count++;
       if(word_count == 2){
-        *index = i;
+        *pindex = i;
       }
     }
     if(word_count == 2 && current_is_letter == 1){
-      //*length = *length + 1;
-      (*length)++; //The same as above
+      //*plength = *plength + 1;
+      (*plength)++; //The same as above
     }
     previous_is_letter = current_is_letter;
   }
@@ -134,7 +136,7 @@ int CharIsLetter(char letter){
  * INPUT: A string to get the second word from and the string to store the value.
  * OUTPUT: None.
  */
-void Transform(char string1[], char *string2){
+void Transform(char string1[], char *pstring2){
   int index = 0;
   int length = 0;
   int i;
@@ -142,7 +144,7 @@ void Transform(char string1[], char *string2){
   IndexOfSecondWord(string1, &index, &length);
   if(index > 0){
     for(i = index; j < length; i++){
-      string2[j] = string1[i];
+      pstring2[j] = string1[i];
       j++;
     }
   }
