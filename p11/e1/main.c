@@ -54,7 +54,9 @@ int main(void){
 	printf("\nERROR: Can't write content in the file.");
       }
     }
-    fclose(pf);
+    if(fclose(pf) != 0){
+      printf("\nERROR: Can't close file.");
+    }
   }
   printf("\n");
   return 0;

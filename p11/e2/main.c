@@ -17,3 +17,27 @@
  *   }
  * } while (ctrl==2);
  */ 
+#include<stdio.h>
+
+int main(void){
+  int read_check;
+  FILE *pf;
+  int day;
+  float temp;
+  pf = fopen("temperatures.txt", "r");
+  if(pf == NULL){
+    printf("ERROR: File doesn't exist.");
+  }else{
+    do{
+      read_check = fscanf(pf, "%d\t%f\n", &day, &temp);
+      if(read_check == 2){
+        printf("\n%d\t%.2f", day, temp);
+      }
+    }while(read_check == 2);
+    if(fclose(pf) != 0){
+      printf("\nERROR: Can't close file.");
+    }
+  }
+  printf("\n");
+  return 0;
+}
