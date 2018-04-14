@@ -79,6 +79,16 @@
 #include<string.h>
 
 #define MAX 100
+#define PLATE_LEN 8
+#define RADAR_FORMAT "%d\t%d\t%lf\t\t%lf\t\t%lf\n"
+#define FINE_FORMAT "%d/%d/%d\t%d\t\t%s\t\t%d\n"
+#define REPORT_FORMAT "%d/%d/%d\t%d\t\t%s\t\t%d\t%.2lf€\n"
+#define RADAR_FILE "radars.txt"
+#define FINE_FILE "fines.txt"
+#define REPORT_FILE "report.txt"
+#define RADAR_INPUT_NUM 5
+#define FINE_INPUT_NUM 6
+#define REPORT_INPUT_NUM 7
 
 typedef struct {
  	int day;
@@ -89,7 +99,7 @@ typedef struct {
 typedef struct {
 	T_DATE date;
 	int id_radar;
- 	char plate[8];
+ 	char plate[PLATE_LEN];
  	int speed;
  	double fine;
 }T_FINE; 
@@ -104,66 +114,156 @@ typedef struct {
  
 //Mandatory functions 
 void LoadRadarsManually (T_RADAR *radars, int num_radars);
-void LoadFinesManually(T_FINE *fines, int num_fines, T_RADAR *radars, int num_radars);
+void LoadFinesManually(T_FINE *fines, int num_fines);
 void CalculateFines(T_FINE *fines, int num_fines, T_RADAR *radars, int num_radars);
-//Optional functions
+void CalculateNumRadars (FILE *f_radars, int *num_radars);
+void CalculateNumFines (FILE *f_fines, int *num_fines);
+void LoadRadarsFile(FILE *f_radars, T_RADAR *radars, int num_radars);
+void LoadFinesFile(FILE *f_fines, T_FINE *fines, int num_fines);
+
+//Radar functions
+void AddRadarsToFile(T_RADAR *radars, int num_radars);
+void AddRadarToFile(T_RADAR radar);
 T_RADAR CreateRadar(void);
-T_FINE CreateFine(T_RADAR *radars, int num_radars);
-int IndexOfRadar(int id_radar, T_RADAR *radars, int num_radars);
-int AskAmount(char label[6]);
-void PrintFines(T_FINE *fines, int num_fines);
-void PrintRadars(T_RADAR *radars, int num_radars);
+void ErrorIdRadar();
+int IndexOfRadarInFile(int id);
+void LoadRadarsFromFile(T_RADAR *radars);
+int NumberOfRadarsInFile();
+void PrintRadar(T_RADAR radar);
+void PrintRadarHeader();
+void PrintRadarInFile(void);
+void RadarFactory(T_RADAR *radar, int id, int speed, double t_20, double t_40, double t_rest);
+int ReadRadarFromFile(FILE *f_radar, T_RADAR *radar);
+int WriteRadarToFile(T_RADAR radar);
+
+//Fine functions
+void AddFinesToFile(T_FINE *fines, int num_fines);
+void AddFineToFile(T_FINE fine);
+T_FINE CreateFine(void);
+void LoadFinesFromFile(T_FINE *fines);
+int NumberOfFinesInFile();
+void PrintFine(T_FINE fine);
+void PrintFineHeader();
+void PrintFineInFile(void);
+void FineFactory(T_FINE *fine, int day, int month, int year, int id_radar, char plate[], int speed);
+int ReadFineFromFile(FILE *f_fine, T_FINE *fine);
+int WriteFineToFile(T_FINE fine);
+
+//Common functions
+void ErrorLoadFile(char filename[]);
+void ErrorAllocate(char msg[]);
+void Error(char msg[]);
+int Menu(void);
+int HandleMenu(int option);
+void AskAmount(char label[6], int *n);
+void GenerateReport(void);
+void PrintReport(T_FINE fine);
 
 int main(void){
-  int num_radars = AskAmount("radars");
-  int num_fines = AskAmount("fines");
-
-  T_RADAR *radars;
-  T_FINE *fines;
-
-  radars = (T_RADAR *)calloc(num_radars, sizeof(T_RADAR));
-  fines = (T_FINE *)calloc(num_fines, sizeof(T_FINE));
-
-  if(radars != NULL & fines != NULL){
-    LoadRadarsManually (radars, num_radars);
-    LoadFinesManually(fines, num_fines, radars, num_radars);
-    CalculateFines(fines, num_fines, radars, num_radars);
-    PrintFines(fines, num_fines);
-    PrintRadars(radars, num_radars);
-  }else{
-    printf("\nERROR: Not enought memory");
-  }
-
+  while(HandleMenu(Menu()) != 6);
   return 0;
 }
 
 /*
- * Load all radars manually.
- * INPUT: Radar pointer to store all radars and the number of radars.
- * OUTPUT: None.
- */ 
-void LoadRadarsManually (T_RADAR *radars, int num_radars){
-  int i;
-  for(i = 0; i < num_radars; i++){
-    printf("\nRadar %d details", i + 1);
-    radars[i] = CreateRadar();
+ * Handle menu option.
+ * INPUT: Option selected.
+ * OUTPUT: Menu option.
+ */
+int HandleMenu(int option){
+  int num_radars = 0;
+  int num_fines = 0;
+  T_RADAR *radars;
+  T_FINE *fines;
+  switch(option){
+    case 1:
+      AskAmount("radars", &num_radars);
+      radars = (T_RADAR *) calloc(num_radars, sizeof(T_RADAR));
+      if(radars != NULL){
+	LoadRadarsManually(radars, num_radars);
+	free(radars);
+      }else{
+        ErrorAllocate("HandleMenu: Loading radar");
+      }
+      break;
+    case 2:
+      PrintRadarInFile();
+      break;
+    case 3:
+      AskAmount("fines", &num_fines);
+      fines = (T_FINE *) calloc(num_fines, sizeof(T_FINE));
+      if(fines != NULL){
+	LoadFinesManually(fines, num_fines);
+	free(fines);
+      }else{
+        ErrorAllocate("HandleMenu: Loading fine");
+      }
+      break;
+    case 4:
+      PrintFineInFile();
+      break;
+    case 5:
+      GenerateReport();
+      break;
+    case 6:
+      printf("\nGoodbye!\n");
+      break;
+    default:
+      Error("Invalid option");
   }
-  return;
+  return option;
 }
 
-/*
- * Load all fines manually.+
- * INPUT: Fines pointer to store all fines and the number of fines. Also we receive the radars
- * to check that the radar id exists.
- * OUTPUT: None.
- */ 
-void LoadFinesManually(T_FINE *fines, int num_fines, T_RADAR *radars, int num_radars){
+void GenerateReport(void){
   int i;
-  for(i = 0; i < num_radars; i++){
-    printf("\nFine %d details", i + 1);
-    fines[i] = CreateFine(radars, num_radars);
+  int read;
+  T_RADAR *radars;
+  int num_radars = NumberOfRadarsInFile();
+  FILE *f_radars;
+  T_RADAR radar;
+  
+  T_FINE *fines;
+  int num_fines = NumberOfFinesInFile();
+  FILE *f_fines;
+  T_FINE fine;
+  
+  f_radars = fopen(RADAR_FILE, "r");
+  f_fines = fopen(FINE_FILE, "r");
+  if(f_radars != NULL && f_fines != NULL){
+    rewind(f_radars);
+    rewind(f_fines);
+    radars = (T_RADAR *) calloc(num_radars, sizeof(T_RADAR));
+    fines = (T_FINE *) calloc(num_fines, sizeof(T_FINE));
+    if(radars != NULL && fines != NULL){
+
+      for(i = 0; i < num_radars; i++){
+	read = ReadRadarFromFile(f_radars, &radar);
+	if(read == RADAR_INPUT_NUM){
+	  radars[i] = radar;
+	}
+      }
+
+      for(i = 0; i < num_fines; i++){
+        read = ReadFineFromFile(f_fines, &fine);
+        if(read == FINE_INPUT_NUM){
+          fines[i] = fine;
+        }
+      }
+      CalculateFines(fines, num_fines, radars, num_radars);
+      free(radars);
+      free(fines);
+    }else if(radars != NULL){
+      ErrorAllocate("GenerateReport: loading fines");
+      free(radars);
+    }else if(fines != NULL){
+      ErrorAllocate("GenerateReport: loading radars");
+      free(fines);
+    }
+    fclose(f_radars);
+    fclose(f_fines);
   }
-  return;
+  else{
+    Error("Can't open file radars.txt and fines.txt");
+  }
 }
 
 /*
@@ -179,33 +279,338 @@ void CalculateFines(T_FINE *fines, int num_fines, T_RADAR *radars, int num_radar
   int limit_speed;
   float pct;
   double fine_amount;
-  for(i = 0; i < num_fines; i++){
-    radar_index = IndexOfRadar(fines[i].id_radar, radars, num_radars);
-    if(radar_index >= 0){
-      radar = radars[radar_index];
-      speed = fines[i].speed;
-      limit_speed = radar.limit_speed;
-      pct = (speed * 100) / limit_speed;
-      fine_amount = 0;
-      if(pct > 100 && pct <= 120){
-        fine_amount = radar.threshold20;
-      }else if(pct > 120 && pct <= 140){
-        fine_amount = radar.threshold40;
-      }else if(pct > 140){
-        fine_amount = radar.threshold_rest;
-      }else{
+  double total = 0;
+  FILE *f_report;
+  f_report = fopen(REPORT_FILE, "w");
+  if(f_report != NULL){
+    printf("\nREPORT");
+    PrintReportHeader();
+    for(i = 0; i < num_fines; i++){
+      radar_index = IndexOfRadarInFile(fines[i].id_radar);
+      if(radar_index >= 0){
+        radar = radars[radar_index];
+        speed = fines[i].speed;
+        limit_speed = radar.limit_speed;
+        pct = (speed * 100) / limit_speed;
         fine_amount = 0;
+        if(pct > 100 && pct <= 120){
+          fine_amount = radar.threshold20;
+        }else if(pct > 120 && pct <= 140){
+          fine_amount = radar.threshold40;
+        }else if(pct > 140){
+          fine_amount = radar.threshold_rest;
+        }else{
+          fine_amount = 0;
+        }
+        fines[i].fine = fine_amount;
+        total += fine_amount;
+        PrintReport(fines[i]);
+
+        fprintf(f_report, REPORT_FORMAT,
+		  fines[i].date.day, 
+		  fines[i].date.month,
+		  fines[i].date.year,
+		  fines[i].id_radar,
+		  fines[i].plate,
+                  fines[i].speed,
+                  fines[i].fine);
       }
-      fines[i].fine = fine_amount;
     }
+    fclose(f_report);
+    printf("\nTotal fines balance: %.2lf€\n\n", total);   
+  }else{
+    ErrorLoadFile(REPORT_FILE);
+  }  
+
+  return;
+}
+
+/*
+ * Show a menu.
+ * INPUT: None.
+ * OUTPUT: None.
+ */ 
+int Menu(void){
+  int option;
+  printf("\nMENU:");
+  printf("\n1 - Add radar");
+  printf("\n2 - Show radars");
+  printf("\n3 - Add fine");
+  printf("\n4 - Show fines");
+  printf("\n5 - Generate report");
+  printf("\n6 - Exit");
+  printf("\nSelect option: ");
+  scanf("%d", &option);
+  return option;
+}
+
+////////////////////////////////////////
+///////////RADAR FUNCTIONS//////////////
+////////////////////////////////////////
+
+/*
+ * Load all radars manually.
+ * INPUT: Radar pointer to store all radars and the number of radars.
+ * OUTPUT: None.
+ */ 
+void LoadRadarsManually (T_RADAR *radars, int num_radars){
+  int i;
+  for(i = 0; i < num_radars; i++){
+    printf("\nRadar %d details", i + 1);
+    radars[i] = CreateRadar();
+  }
+  AddRadarsToFile(radars, num_radars);
+  return;
+}
+
+/**
+ * Add a collection of radars into the radars file.
+ * INPUT: Collection of radars and the number of radars.
+ * OUTPUT: None.
+ */ 
+void AddRadarsToFile(T_RADAR *radars, int num_radars){
+  int i = 0;
+  for(i = 0; i < num_radars; i++){
+    AddRadarToFile(radars[i]);
+  }
+  return;
+}
+
+/**
+ * Add a radar into the radars file.
+ * INPUT: Radar.
+ * OUTPUT: None.
+ */ 
+void AddRadarToFile(T_RADAR radar){
+  FILE *f_radar;
+  int index_of = IndexOfRadarInFile(radar.id_radar);
+  if(index_of >= 0){ 
+    ErrorIdRadar();
+    PrintRadarHeader();
+    PrintRadar(radar);
+  }else{
+    WriteRadarToFile(radar);
+  }	
+  return;
+}
+
+/*
+ * Print all radars in the radars.txt file.
+ * INPUT: None.
+ * OUTPUT: None.
+ */ 
+void PrintRadarInFile(void){
+  int count = NumberOfRadarsInFile();
+  int i;
+  T_RADAR *radars;
+  
+  radars = (T_RADAR *) calloc(count, sizeof(T_RADAR));
+
+  if(radars != NULL){
+    LoadRadarsFromFile(radars);
+    printf("\nRADARS:");
+    PrintRadarHeader();
+    for(i = 0; i < count; i++){
+      PrintRadar(radars[i]);
+    }
+    free(radars);
+  }else{
+    ErrorAllocate("PrintRadarInFile");
   }
   return;
 }
 
 /*
- * Create a T_FINE element.
+ * Look for a radar in the radars.txt file.
+ * INPUT: Id of the radar to look for.
+ * OUTPUT: -1 if it's not found, otherwise, returns the index of the element within the array.
+ */ 
+int IndexOfRadarInFile(int id){
+  int index = -1;
+  int count = NumberOfRadarsInFile();
+  int i;
+  T_RADAR *radars;
+  
+  radars = (T_RADAR *) calloc(count, sizeof(T_RADAR));
+
+  if(radars != NULL){
+    LoadRadarsFromFile(radars);
+    for(i = 0; i < count && index == -1; i++){
+      if(id == radars[i].id_radar){
+	index = i;
+      }
+    }
+    free(radars);
+  }else{
+    ErrorAllocate("IndexOfRadarInFile");
+  }
+  return index;
+}
+
+/*
+ * Load all radars from file.
+ * INPUT: Radars vector to store them.
+ * OUTPUT: None.
+ */ 
+void LoadRadarsFromFile(T_RADAR *radars){
+  FILE *f_radar;  
+  int counter = NumberOfRadarsInFile();
+
+  f_radar = fopen(RADAR_FILE, "r");
+  if(f_radar != NULL){
+    rewind(f_radar);
+    LoadRadarsFile(f_radar, radars, counter);
+    fclose(f_radar);
+  }
+  return;
+}
+
+/*
+ * Load all radars from file.
+ * INPUT: Radars vector to store them.
+ * OUTPUT: None.
+ */ 
+void LoadRadarsFile(FILE *f_radars, T_RADAR *radars, int num_radars){
+  int read;
+  T_RADAR radar;
+  int i = 0;
+  if(f_radars != NULL){
+    rewind(f_radars);
+    do{
+      read = ReadRadarFromFile(f_radars, &radar);
+      if(read == RADAR_INPUT_NUM){
+        radars[i] = radar;
+	i++;
+      }
+    }while(read != 0 && read != EOF);
+  }else{
+    ErrorLoadFile(RADAR_FILE);
+  }
+  return;
+}
+
+/*
+ * Get the number of radars stored in the radars.txt file.
  * INPUT: None.
- * OUTPUT: A T_Fine element.
+ * OUTPUT: Number of radars.
+ */ 
+int NumberOfRadarsInFile(){
+  FILE *f_radar;
+  int counter = 0;
+
+  f_radar = fopen(RADAR_FILE, "r");
+  if(f_radar != NULL){
+    rewind(f_radar);
+    CalculateNumRadars(f_radar, &counter);
+    fclose(f_radar);
+  }
+  return counter;
+}
+
+/*
+ * Get the number of radars stored in the radars.txt file.
+ * INPUT: File of radars and the variable to store the number of radars.
+ * OUTPUT: None.
+ */
+void CalculateNumRadars (FILE *f_radars, int *num_radars){
+  int counter = 0;
+  int read;
+  T_RADAR radar;
+  if(f_radars != NULL){
+    do{
+      read = ReadRadarFromFile(f_radars, &radar);
+      if(read == RADAR_INPUT_NUM){
+        counter++;
+      }
+    }while(read != 0 && read != EOF);
+  }else{
+    ErrorLoadFile(RADAR_FILE);
+  }
+  *num_radars = counter;
+}
+
+/*
+ * Read one radar from the radars.txt file.
+ * INPUT: Radar file and the radar variable to store within it.
+ * OUTPUT: Result of scanf.
+ */ 
+int ReadRadarFromFile(FILE *f_radar, T_RADAR *radar){
+  int id;
+  int speed;
+  double t_20;
+  double t_40;
+  double t_rest;
+  int read = fscanf(f_radar, RADAR_FORMAT, &id, &speed, &t_20, &t_40, &t_rest);
+  if(read == RADAR_INPUT_NUM){
+    RadarFactory(radar, id, speed, t_20, t_40, t_rest); 
+  }
+  return read;
+}
+
+/*
+ * Writes one radar into the radars.txt file.
+ * INPUT: Radar variable.
+ * OUTPUT: Result of fprintf.
+ */ 
+int WriteRadarToFile(T_RADAR radar){
+  FILE *f_radar;
+  int write;
+  f_radar = fopen(RADAR_FILE, "a");
+  if(f_radar != NULL){
+    write = fprintf(f_radar, RADAR_FORMAT,
+		  radar.id_radar, 
+		  radar.limit_speed,
+		  radar.threshold20,
+		  radar.threshold40,
+		  radar.threshold_rest);
+    fclose(f_radar);
+  }
+  return write;
+}
+
+/*
+ * Print a radar.
+ * INPUT: Radar.
+ * OUTPUT: None.
+ */ 
+void PrintRadar(T_RADAR radar){
+  printf(RADAR_FORMAT,
+		  radar.id_radar, 
+		  radar.limit_speed,
+		  radar.threshold20,
+		  radar.threshold40,
+		  radar.threshold_rest);
+  return;
+}
+
+/*
+ * Print a radar header.
+ * INPUT: Radar.
+ * OUTPUT: None.
+ */ 
+void PrintRadarHeader(){
+  printf("\nID\tSPEED\tTRESHOLD 20%\t\tTRESHOLD 40%\t\tTRESHOLD REST\n");  
+  return;
+}
+
+/*
+ * Creates a radar.
+ * INPUT: All radar info and the radar where all will be stored in.
+ * OUTPUT: None.
+ */ 
+void RadarFactory(T_RADAR *radar, int id, int speed, double t_20, double t_40, double t_rest){
+  radar->id_radar = id;
+  radar->limit_speed = speed;
+  radar->threshold20 = t_20;
+  radar->threshold40 = t_40;
+  radar->threshold_rest = t_rest;
+  return;
+}
+
+/*
+ * Create a T_RADAR element.
+ * INPUT: None.
+ * OUTPUT: A T_RADAR element.
  */
 T_RADAR CreateRadar(void){
   T_RADAR radar;
@@ -228,122 +633,356 @@ T_RADAR CreateRadar(void){
   return radar;
 }
 
-/*
- * Create a T_FINE element.
- * INPUT: All the radars and the amount of radars. It's used to check the radar exists.
- * OUTPUT: A T_Fine element.
- */ 
-T_FINE CreateFine(T_RADAR *radars, int num_radars){
-  T_FINE fine;
-  int index_of_radar;
-  do{
-    printf("\nEnter the radar id: ");
-    scanf("%d", &fine.id_radar);
-    index_of_radar = IndexOfRadar(fine.id_radar, radars, num_radars);
-    if(index_of_radar < 0){
-      printf("\nERROR: Radar not found");
-    }
-  }while(index_of_radar < 0);
+////////////////////////////////////////
+///////////FINES FUNCTIONS//////////////
+////////////////////////////////////////
 
-  printf("\nEnter speed: ");
-  scanf("%d", &fine.speed);
-
-  fine.fine = 0;
-
-  do{
-    printf("\nEnter day: ");
-    scanf("%d", &fine.date.day);
-  }while(fine.date.day < 1 || fine.date.day > 31);
-
-  do{
-    printf("\nEnter month: ");
-    scanf("%d", &fine.date.month);
-  }while(fine.date.month < 1 || fine.date.month > 12);  
-
-  do{
-    printf("\nEnter year: ");
-    scanf("%d", &fine.date.year);
-  }while(fine.date.year < 1977);
-  
-  printf("\nEnter car plate: ");
-  scanf(" %s", fine.plate);
-  
-  return fine;
-}
 
 /*
- * Look for radar id and returns the index.
- * INPUT: The id of the radar, all the radars and the amount of radars.
- * OUTPUT: The index where the id of the radar is. If it's -1, it's not found.
+ * Load all fines manually.
+ * INPUT: Fine pointer to store all fines and the number of fines.
+ * OUTPUT: None.
  */ 
-int IndexOfRadar(int id_radar, T_RADAR *radars, int num_radars){
-  int found = -1;
+void LoadFinesManually (T_FINE *fines, int num_fines){
   int i;
-  for(i = 0; i < num_radars && found == -1; i++){
-    if(radars[i].id_radar == id_radar){
-      found = i;
-    }
-  }
-  return found;
-}
-
-/*
- * Ask the amount of elements.
- * INPUT: Label to print.
- * OUTPUT: Integer as the amount of elements.
- */
-int AskAmount(char label[6]){
-  int amount;
-  do{
-    printf("\nEnter the number of %s you want to enter manually: ", label);
-    scanf("%d", &amount);
-    if(amount <= 0 || amount > MAX){
-      printf("\nERROR: Invalid amount. Must be greater than 0 and less than %d", MAX);
-    } 
-  }while(amount <= 0 || amount > MAX);
-  return amount;
-}
-
-/*
- * Print all fines details.
- * INPUT: Fines and the amount of fines.
- * OUTPUT None.
- */ 
-void PrintFines(T_FINE *fines, int num_fines){
-  int i;
-  printf("\nFINES:");
-  printf("\nDate\t\tRadar\tPlate\tSpeed\tFine");
   for(i = 0; i < num_fines; i++){
-    printf("\n%0d/%0d/%2d\t%d\t%s\t%d\t%.2lf", 
-		    fines[i].date.day,
-		    fines[i].date.month,
-		    fines[i].date.year,
-		    fines[i].id_radar,
-		    fines[i].plate,
-		    fines[i].speed,
-		    fines[i].fine);
+    printf("\nFine %d details", i + 1);
+    fines[i] = CreateFine();
   }
-  printf("\n");
+  AddFinesToFile(fines, num_fines);
+  return;
+}
+
+/**
+ * Add a collection of fines into the fines file.
+ * INPUT: Collection of fines and the number of fines.
+ * OUTPUT: None.
+ */ 
+void AddFinesToFile(T_FINE *fines, int num_fines){
+  int i = 0;
+  for(i = 0; i < num_fines; i++){
+    AddFineToFile(fines[i]);
+  }
+  return;
+}
+
+/**
+ * Add a fine into the fines file.
+ * INPUT: Fine.
+ * OUTPUT: None.
+ */ 
+void AddFineToFile(T_FINE fine){
+  WriteFineToFile(fine);	
   return;
 }
 
 /*
- * Print all radars details.
- * INPUT: Radars and the amount of radars.
- * OUTPUT None.
+ * Print all fines in the fines.txt file.
+ * INPUT: None.
+ * OUTPUT: None.
  */ 
-void PrintRadars(T_RADAR *radars, int num_radars){
+void PrintFineInFile(void){
+  int count = NumberOfFinesInFile();
   int i;
-  printf("\nRADARS:");
-  printf("\nId\tLimit\tFine <= 20%%\tFine <= 40%%\tFine > 40%%");
-  for(i = 0; i < num_radars; i++){
-    printf("\n%d\t%d\t%lf\t\t%lf\t\t%lf", 
-		    radars[i].id_radar,
-		    radars[i].limit_speed,
-		    radars[i].threshold20,
-		    radars[i].threshold40,
-		    radars[i].threshold_rest);
+  T_FINE *fines;
+  
+  fines = (T_FINE *) calloc(count, sizeof(T_FINE));
+
+  if(fines != NULL){
+    LoadFinesFromFile(fines);
+    printf("\nFINES:");
+    PrintFineHeader();
+    for(i = 0; i < count; i++){
+      PrintFine(fines[i]);
+    }
+    free(fines);
+  }else{
+    ErrorAllocate("PrintFineInFile");
   }
-  printf("\n");
+  return;
+}
+
+/*
+ * Load all fines from file.
+ * INPUT: Fines vector to store them.
+ * OUTPUT: None.
+ */ 
+void LoadFinesFromFile(T_FINE *fines){
+  FILE *f_fine;  
+  int counter = NumberOfFinesInFile();
+
+  f_fine = fopen(FINE_FILE, "r");
+  if(f_fine != NULL){
+    rewind(f_fine);
+    LoadFinesFile(f_fine, fines, counter);
+    fclose(f_fine);
+  }
+  return;
+}
+
+/*
+ * Load all fines from file.
+ * INPUT: Fines vector to store them.
+ * OUTPUT: None.
+ */ 
+void LoadFinesFile(FILE *f_fines, T_FINE *fines, int num_fines){
+  int read;
+  T_FINE fine;
+  int i = 0;
+  if(f_fines != NULL){
+    rewind(f_fines);
+    do{
+      read = ReadFineFromFile(f_fines, &fine);
+      if(read == FINE_INPUT_NUM){
+        fines[i] = fine;
+	i++;
+      }
+    }while(read != 0 && read != EOF);
+  }else{
+    ErrorLoadFile(FINE_FILE);
+  }
+  return;
+}
+
+/*
+ * Get the number of fines stored in the fines.txt file.
+ * INPUT: None.
+ * OUTPUT: Number of fines.
+ */ 
+int NumberOfFinesInFile(){
+  FILE *f_fine;
+  int counter = 0;
+
+  f_fine = fopen(FINE_FILE, "r");
+  if(f_fine != NULL){
+    rewind(f_fine);
+    CalculateNumFines(f_fine, &counter);
+    fclose(f_fine);
+  }
+  return counter;
+}
+
+/*
+ * Get the number of fines stored in the fines.txt file.
+ * INPUT: File of radars and the variable to store the number of radars.
+ * OUTPUT: None.
+ */
+void CalculateNumFines (FILE *f_fines, int *num_fines){
+  int counter = 0;
+  int read;
+  T_FINE fine;
+  if(f_fines != NULL){
+    do{
+      read = ReadFineFromFile(f_fines, &fine);
+      if(read == FINE_INPUT_NUM){
+        counter++;
+      }
+    }while(read != 0 && read != EOF);
+  }else{
+    ErrorLoadFile(FINE_FILE);
+  } 
+  *num_fines = counter;
+}
+
+/*
+ * Read one fine from the fines.txt file.
+ * INPUT: Fine file and the fine variable to store within it.
+ * OUTPUT: Result of scanf.
+ */ 
+int ReadFineFromFile(FILE *f_fine, T_FINE *fine){
+  int day;
+  int month;
+  int year;
+  int id;
+  char plate[PLATE_LEN];
+  int speed;
+  int read = fscanf(f_fine, FINE_FORMAT, &day, &month, &year, &id, plate, &speed);
+  if(read == FINE_INPUT_NUM){
+    FineFactory(fine, day, month, year, id, plate, speed);
+  }
+  return read;
+}
+
+/*
+ * Writes one fine into the fines.txt file.
+ * INPUT: Fine variable.
+ * OUTPUT: Result of fprintf.
+ */ 
+int WriteFineToFile(T_FINE fine){
+  FILE *f_fine;
+  int write;
+  f_fine = fopen(FINE_FILE, "a");
+  if(f_fine != NULL){
+    write = fprintf(f_fine, FINE_FORMAT,
+		  fine.date.day, 
+		  fine.date.month,
+		  fine.date.year,
+		  fine.id_radar,
+		  fine.plate,
+                  fine.speed);
+    fclose(f_fine);
+  }
+  return write;
+}
+
+/*
+ * Print a fine.
+ * INPUT: Fine.
+ * OUTPUT: None.
+ */ 
+void PrintFine(T_FINE fine){
+  printf(FINE_FORMAT,
+		  fine.date.day, 
+		  fine.date.month,
+		  fine.date.year,
+		  fine.id_radar,
+		  fine.plate,
+                  fine.speed);
+  return;
+}
+
+/*
+ * Print a fine header.
+ * INPUT: Fine.
+ * OUTPUT: None.
+ */ 
+void PrintFineHeader(){
+  printf("\nDay/Month/Year\tID RADAR\tPLATE\t\tSPEED\n");  
+  return;
+}
+
+/*
+ * Creates a fine.
+ * INPUT: All fine info and the fine where all will be stored in.
+ * OUTPUT: None.
+ */ 
+void FineFactory(T_FINE *fine, int day, int month, int year, int id_radar, char plate[], int speed){
+  fine->date.day = day;
+  fine->date.month = month;
+  fine->date.year = year;
+  fine->id_radar = id_radar;
+  strcpy(fine->plate, plate);
+  fine->speed = speed;
+  fine->fine = 0;
+  return;
+}
+
+/*
+ * Create a T_FINE element.
+ * INPUT: None.
+ * OUTPUT: A T_Fine element.
+ */
+T_FINE CreateFine(void){
+  T_FINE fine;
+ 
+  printf("\nEnter fine day: ");
+  scanf("%d", &fine.date.day);
+
+  printf("\nEnter fine month: ");
+  scanf("%d", &fine.date.month);
+
+  printf("\nEnter fine year: ");
+  scanf("%d", &fine.date.year);
+
+  printf("\nEnter radar id: ");
+  scanf("%d", &fine.id_radar);
+
+  getchar();
+  printf("\nEnter car plate: ");
+  fgets(fine.plate, PLATE_LEN, stdin);
+
+  printf("\nEnter speed: ");
+  scanf("%d", &fine.speed);
+  
+  fine.fine = 0;
+
+  return fine;
+}
+
+
+////////////////////////////////////////
+//////////COMMON FUNCTIONS//////////////
+////////////////////////////////////////
+
+/*
+ * Show an error message when file can't be opened.
+ * INPUT: File name.
+ * OUTPUT: None.
+ */ 
+void ErrorLoadFile(char filename[]){
+  Error(strcat("Can't load file: ", filename));
+  return;
+}
+
+/*
+ * Show an error message when can't allocate memory.
+ * INPUT: None.
+ * OUTPUT: None.
+ */ 
+void ErrorAllocate(char msg[]){
+  Error(strcat("Not enought memory: ", msg));
+  return;
+}
+
+/*
+ * Show an error message when id radar is repeated.
+ * INPUT: None.
+ * OUTPUT: None.
+ */ 
+void ErrorIdRadar(){
+  Error("Id radar is repeated");
+  return;
+}
+
+/*
+ * Show a custom error message.
+ * INPUT: None.
+ * OUTPUT: None.
+ */ 
+void Error(char msg[]){
+  printf("\nERROR: %s.\n", msg);
+  return;
+}
+
+/*
+ * Ask for the amount of elements.
+ * INPUT: Elements name and the variable to store the number of elements.
+ * OUTPUT: None.
+ */ 
+void AskAmount(char label[6], int *n){
+  do{
+    printf("\nHow many %s do you want to add? ", label);
+    scanf("%d", n);
+    if((*n) <= 0 || (*n) > MAX){
+      Error("amount must be greater than 0 and less than 100");
+    }
+  }while((*n) <= 0 || (*n) > MAX);
+  return;
+}
+
+/*
+ * Print a report header.
+ * INPUT: Fine.
+ * OUTPUT: None.
+ */ 
+void PrintReportHeader(){
+  printf("\nDay/Month/Year\tID RADAR\tPLATE\t\tSPEED\tFINE\n");  
+  return;
+}
+
+/*
+ * Print a fine.
+ * INPUT: Fine.
+ * OUTPUT: None.
+ */ 
+void PrintReport(T_FINE fine){
+  printf(REPORT_FORMAT,
+		  fine.date.day, 
+		  fine.date.month,
+		  fine.date.year,
+		  fine.id_radar,
+		  fine.plate,
+                  fine.speed,
+                  fine.fine);
   return;
 }
