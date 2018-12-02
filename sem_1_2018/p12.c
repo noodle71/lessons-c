@@ -1,139 +1,80 @@
 /*
-
-Vamos a retomar el proyecto GEVICAI “Gestión y Venta de billetes de avión de la Agencia de Viajes
-ICAI”, que comenzamos en la práctica 10.
-En la práctica 10 hemos estado trabajando con las estructuras (que mantendremos a lo largo de todo el
-proyecto):
-typedef struct {
-int id_avion; 
-char modelo[20];
-int num_plazas; 
-float vel_max; 
-}T_AVION;
-typedef struct {
-int num_vuelo; 
-char origen[4];
-char destino[4];
-int id_avion; 
-char dia[10]; 
-T_HORARIO hora_salida;
-int num_pas;
-
-float precio; 
-} T_RECORRIDO;
-ATENCIÓN: Añadir el nuevo campo precio a la estructura T_RECORRIDO
-
-Además, vamos a añadir una nueva estructura T_VENTA que va a contener las ventas de billetes que
-se han realizado. La estructura será:
-typedef struct {
-int id_venta; 
-int num_vuelo; 
-int id_avion; 
-int num_billetes; 
-float precio_total; 
-int tarjeta_embarque; 
-}T_VENTA;
-Ahora que ya sabemos manejar archivos, podemos añadir a nuestro proyecto la posibilidad de hacer la
-carga automática. De hecho, le vamos a dejar elegir al usuario qué tipo de carga quiere realizar.
-Partiendo del código desarrollado en la práctica 10, se ha de preguntar al principio del programa
-principal si el usuario quiere realizar la carga manual o automática. En caso de elegir la carga manual,
-se ejecutarán las funciones creadas para llevarlas a cabo en la práctica 10. Si se elige la carga
-automática va a ser necesario:
-
-Abrir los archivos de texto aviones.txt y recorridos.txt en modo lectura (deben estar
-creados y se pueden crear con un editor de textos como Block de Notas, NotePad o el propio
-editor de Codelite).
-Utilizando las funciones ContarAviones() y ContarRecorridos() comprobar los datos
-de cuántos aviones y cuántos recorridos hay en los ficheros. Ambas funciones devolverán por
-referencia el número de aviones o recorridos encontrados en los archivos de texto.
-void ContarAviones(FILE *pf, int *pcont);
-void ContarRecorridos(FILE *pf, int *pcont);
-
-
-A continuación, se ha de asignar memoria dinámicamente a los dos vectores v_av y v_rec .
-Una vez que se ha podido asignar la memoria dinámicamente, es necesario cargar los dos
-CargaAutomaticaAviones()
-y
-vectores
-utilizando
-las
-funciones
-CargaAutomaticaRecoridos().
-void CargaAutomaticaAviones(FILE *pf, T_AVION v_av[], int num_av);
-void CargaAutomaticaRecorridos(FILE *pf, T_RECORRIDO v_rec[], int
-num_rec);
-Una vez que se ha realizado la carga de la información de aviones y recorridos desde los archivos de
-texto, pueden cerrarse pues ya no se van a utilizar para nada más.
-A continuación, se han de añadir nuevas opciones al menú, mantenimiento las que ya existían:
-4.
-Venta de billetes. Se le solicita al usuario cuál es el número de vuelo en el que quiere realizar
-la compra y cuántos billetes se quieren comprar (los pasajeros que van a viajar).
-La gestión de la venta de billetes se va a realizar a través de la función VentaBilletes()
-que debe devolver:
- el valor 1 si la venta se ha podido realizar.
- el valor 0 si no se ha podido realizar porque no quedaba ninguna plaza
-disponible.
- un valor negativo que indicará que no se ha podido realizar la venta porque
-faltaban ese mismo valor de plazas (es decir, si el usuario ha solicitado 5
-plazas y sólo había dos disponibles, la función VentaBilletes()
-devolverá el valor -3, indicando que no se ha podido realizar la venta porque
-faltaban 3 plazas para completar la venta).
-
-Además de la información anterior, la función VentaBilletes() debe rellenar, en el caso de
-que se haya podido realizar la venta, una estructura T_VENTA pasada por referencia con la
-información de la venta.
-El prototipo de la función VentaBilletes() es:
-int VentaBilletes(T_AVION v_av[], int num_av, T_RECORRIDO v_rec[],
-int num_rec, int num_vuelo, int num_billetes,
-T_VENTA *vent);
-Dentro de la función, para saber si es posible realizar la venta de los billetes solicitados, se ha
-de utilizar la función BuscarRecorrido() para buscar en el vector de recorridos aquél que
-tenga el número de vuelo indicado:
-int BuscarRecorrido(T_RECORRIDO v_rec[], int num_rec, int num_vuelo);
-La función BuscarRecorrido() devuelve el valor -1 si no se ha encontrado ningún
-recorrido con ese número de vuelo, y el índice en el vector v_rec del recorrido que tenga
-dicho número de vuelo en caso de haberlo encontrado.
-Si se ha encontrado el número de vuelo, es necesario buscar en el vector v_av el tipo de avión
-con el fin de saber el número de plazas máximo de ese tipo de avión. Para ello, se va a utilizar
-la función BuscarAvion() que sabiendo el tipo de avión que va a realizar dicho recorrido
-( id_avion ) va a devolver el valor -1 si no ha encontrado el identificador del avión en el
-vector de aviones, y el índice de dicho avión en el vector de aviones ( v_av ) en caso de
-haberlo encontrado. También va a devolver por referencia el número de plazas máximo de
-dicho tipo de avión.
-int BuscarAvion(T_AVION
-*num_max);
-v_av[],
-int
-num_av,
-int
-id_avion,
-int
-Con toda esta información, la función VentaBilletes() decide si se puede llevar a cabo o
-no la venta. Si se puede llevar a cabo la venta, debe incrementar en el vector de recorridos
-v_rec el número de pasajeros del recorrido que se corresponde con la venta y rellena la
-estructura T_VENTA con la información que corresponda. Al realizar la venta de billetes, el
-campo tarjeta_embarque siempre se pondrá a 0 y el identificador de la venta ( id_venta )
-se genera aleatoriamente con un número entre 0 y 1.000.000.
-En el programa principal, después de haber ejecutado la función VentaBilletes() y si se
-ha podido realizar la venta, se mostrará por pantalla la información de la venta realizada
-utilizando la función MostrarVenta():
-void MostrarVenta(T_VENTA vent);
-5.
-Mostrar posibles recorridos con un precio más bajo al indicado por el usuario. Para ello, se va
-a utilizar la función BuscarRecorridosBaratos() que va a mostrar el número de vuelo, el
-origen y el destino de todos aquellos vuelos cuyo precio sea inferior al indicado por el usuario
-y que dispongan de plazas libres. Para ello, va a resultar útil utilizar la función
-BuscarAvion() descrita en el apartado anterior.
-El prototipo de la función es:
-Void BuscarRecorridosBaratos(T_RECORRIDO v_rec[], int num_rec,
-T_AVION v_av[], int num_av,
-float precio);
+GE_V_ICAI: Gestión y Venta de billetes de avión de la
+Agencia de Viajes ICAI.
+Entrega 3
+Y seguimos con el proyecto GEVICAI “Gestión y Venta de billetes de avión de la Agencia de Viajes ICAI”, que
+comenzamos en la práctica 10 y que vamos a terminar con esta práctica.
+Nuevamente, vamos a partir del programa que hemos realizado en la práctica 11 seguimos añadiéndole
+funcionalidad.
+Como ya hemos aprendido a manejar archivos binarios, vamos a crear un nuevo archivo binario en el que vamos
+a escribir en él y leer de él las ventas que se han realizado. Para ello, va a ser necesario que, después de haber
+rellenado los vectores de aviones y recorridos, y antes de llegar al menú con las opciones del programa, abrir el
+archivo binario ventas_realizadas.dat en modo lectura/escritura con las comprobaciones que sean
+necesarias. No hay que olvidar que al finalizar la ejecución del programa, va a ser necesario cerrar el archivo
+siempre y cuando se haya podido abrir correctamente.
+El archivo ventas_realizadas.dat va a contener las ventas que se han ido realizando a través de la función
+VentaBilletes(). Si después de haber ejecutado la opción de venta, en el programa principal se comprueba
+que se ha podido realizar la venta, además de mostrar la estructura T_VENTA por pantalla (que ya se hacía en la
+entrega anterior), se debe almacenar (escribir) la venta realizada al final del archivo ventas_realizadas.dat .
+Hay que recordar que según se realiza la venta, el campo tarjeta_embarque de la estructura T_VENTA está
+puesto a 0, indicando que no se ha generado la tarjeta de embarque todavía.
+Además, se van a añadir dos nuevas opciones al menú:
 6.
+Mostrar el contenido del archivo ventas_realidas.dat. Para llevar a cabo esta opción, va a
+utilizarse la función
+void MostrarArchivoVentas(FILE *pfv);
+A su vez, esta función utilizará la función MostrarVenta() creada en la entrega anterior y que
+mostraba por pantalla la información de la venta recibida como argumento.
+void MostrarVenta(T_VENTA vent);
+7.
+Obtener la tarjeta de embarque. En esta opción lo que se busca es simular que llegado el momento, se
+va a sacar la tarjeta de embarque (o tarjetas de embarque si la venta es de varias plazas) de una venta
+realizada previamente.
+Antes de hacer la llamada a la función ObtenerTarjetas() se le debe preguntar al usuario de qué
+identificador de venta ( id_venta ) quiere obtener la tarjeta de embarque (recordemos que el
+identificador de la venta se generaba aleatoriamente al hacer la venta del billetes).
+El prototipo de la función ObtenerTarjetaS() es:
+int ObtenerTarjetas(FILE *pfv, int id_venta, int *posicion_venta);
+La función devuelve un valor entero que indica:
+ Un valor >= 0 sí se han obtenido las tarjetas de embarque y la venta que se corresponde con el
+id_venta está en la posición indicada por el valor. Es decir, si la función devuelve el valor 2
+indica que se han podido generar las tarjetas de embarque y la venta es la tercera del archivo
+binario (si es la primera se devuelve el valor 0).
+ -1, no se han podido obtener las tarjetas de embarque porque no existe ese identificador de
+venta en el archivo binario.
+ -2, no se han podido obtener las tarjetas de embarque porque ya se han obtenido previamente
+(el campo de tarjeta_embarque de esa venta está puesto a 1).
+
+Dentro de la función ObtenerTarjetas() en caso de poder obtener las tarjetas de embarque, será
+necesario modificar en el archivo binario la venta cuyo identificador se corresponda con el id_venta ,
+poniendo a 1 el campo tarjeta_embarque de dicha venta.
+En el programa principal se mostrará un mensaje indicando si han podido o no obtener las tarjetas de
+embarque. Si no se han podido obtener se indicará el motivo, y si se han podido obtener se mostrará un
+mensaje similar a:
+“Obtenidas las tarjetas de embarque de la venta con identificador 33445 para
+3 billetes entre MAD y NYC en el Boeing 737”
+Para poder mostrar este mensaje puede ser útil utilizar las funciones BuscarAvion() y
+BuscarRecorrido() creadas en la entrega anterior.
+8.
+(Opcional) Generar un informe de las ventas realizadas.
+Para realizar este informe, se va a utilizar la función GenerarInforme() que generará un informe en
+un archivo de texto cuyo nombre se le solicitará al usuario. En este nuevo archivo, hay que escribir la
+siguiente información:
+ Ventas realizadas en formato de tabla con todos sus campos.
+ Importe total de las ventas realizadas.
+ Porcentaje de billetes con la tarjeta de embarque emitidas.
+ Porcentaje de billetes con la tarjeta de embarque no emitidas.
+ Venta destacada: se corresponde con la venta de mayor importe.
+El prototipo de la función GenerarInforme() es:
+void GenerarInforme(FILE *pfv);
+Dado que no se pasa el puntero del archivo de texto a crear se entiende que se abre y cierra dentro de la
+función.
+9.
 Salir.
 Informe de la práctica
- Entregar los listados de los programas
+ Entregar los listados de los programas.
  Entregar un ejemplo de la salida de cada programa.
-4
+3
 */
 #include <stdio.h>
 #include <stdlib.h>
@@ -147,6 +88,7 @@ Informe de la práctica
 #define PRINT_VENTA "ID: %d\tNUM. VUELO: %d\tID AVION: %d\tNUM. BILLETES: %d\tPRECIO: %.2f\tEMBARQUE: %d\n"
 #define F_AVION "aviones.txt"
 #define F_RECORRIDOS "recorridos.txt"
+#define F_VENTAS "ventas_realidas.dat"
 
 typedef struct
 {
@@ -214,6 +156,10 @@ void MostrarVenta(T_VENTA vent);
 
 void BuscarRecorridosBaratos(T_RECORRIDO v_rec[], int num_rec, T_AVION v_av[], int num_av, float precio);
 
+//NUEVO EN LA PRACTICA 12
+void MostrarArchivoVentas(FILE *pfv);
+int ObtenerTarjetas(FILE *pfv, int id_venta, int *posicion_venta);
+
 //FUNCIONES NO OBLIGATORIAS
 int menu(void);
 void PedirCadena(char mensaje[], int tam, char cadena[]);
@@ -231,14 +177,17 @@ int main(void)
   char origen[M], destino[M];
   int recorridos_encontrados;
   int modo;
-  FILE *f_avi, *f_rec;
+  FILE *f_avi, *f_rec, *f_ven;
   float precio;
   int num_vuelo;
   int num_billetes;
   T_VENTA vent;
   int res_venta;
+  int id_venta;
+  int res_tarjeta;
+  int posicion_venta;
 
-  srand(time(NULL));
+  srand((unsigned)time(NULL));
   do
   {
     PedirInt("Pulsa 0 para carga manual\nPulsa 1 para carga automatica", &modo);
@@ -363,6 +312,13 @@ int main(void)
       else
       {
         puts("Aqui tiene los resultados de la venta:\n");
+        f_ven = fopen(F_VENTAS, "ab");
+        fseek(f_ven, 0, SEEK_END);
+        if (f_ven != NULL)
+        {
+          fwrite(&vent, sizeof(T_VENTA), 1, f_ven);
+          fclose(f_ven);
+        }
         MostrarVenta(vent);
       }
       break;
@@ -371,13 +327,42 @@ int main(void)
       BuscarRecorridosBaratos(v_rec, num_rec, v_av, num_avi, precio);
       break;
     case 6:
+      f_ven = fopen(F_VENTAS, "rb");
+      puts("Mostrando ventas:\n");
+      MostrarArchivoVentas(f_ven);
+      fclose(f_ven);
+      break;
+    case 7:
+      f_ven = fopen(F_VENTAS, "rb+");
+      PedirInt("Introduzca el ID de venta", &id_venta);
+      posicion_venta = -1;
+      res_tarjeta = ObtenerTarjetas(f_ven, id_venta, &posicion_venta);
+      if (res_tarjeta == -1)
+      {
+        puts("ID venta no encontrado");
+      }
+      else if (res_tarjeta == -2)
+      {
+        puts("Tarjetas de embarque ya emitidas");
+      }
+      else
+      {
+        fseek(f_ven, res_tarjeta  * sizeof(T_VENTA), SEEK_SET);
+        fread(&vent, sizeof(T_VENTA), 1, f_ven);
+        MostrarVenta(vent);
+        // printf("Obtenidas las tarjetas de embarque de la venta con identificador %d para %d billetes entre %s y %s en el %s");
+      }
+
+      fclose(f_ven);
+      break;
+    case 8:
       puts("Salir\n\n");
       break;
     default:
       puts("ERROR: Opcion invalida");
     }
 
-  } while (opcion != 6);
+  } while (opcion != 8);
   return 0;
 }
 
@@ -570,14 +555,17 @@ int VentaBilletes(T_AVION v_av[], int num_av, T_RECORRIDO v_rec[], int num_rec, 
   T_RECORRIDO r;
 
   index_recorrido = BuscarRecorrido(v_rec, num_rec, num_vuelo);
-  if(index_recorrido >= 0){
+  if (index_recorrido >= 0)
+  {
     r = v_rec[index_recorrido];
     index_avion = BuscarAvion(v_av, num_av, r.id_avion, &plazas);
-    if(index_avion >= 0){
+    if (index_avion >= 0)
+    {
       plazas_restantes = plazas - r.num_pas - num_billetes;
-      if(plazas_restantes >= 0){
+      if (plazas_restantes >= 0)
+      {
         res = 1;
-        vent->id_venta = rand()%1000000;
+        vent->id_venta = rand() % 1000000;
         vent->num_vuelo = num_vuelo;
         vent->id_avion = r.id_avion;
         vent->num_billetes = num_billetes;
@@ -585,7 +573,8 @@ int VentaBilletes(T_AVION v_av[], int num_av, T_RECORRIDO v_rec[], int num_rec, 
         vent->tarjeta_embarque = 0;
         v_rec[index_recorrido].num_pas += num_billetes;
       }
-      else{
+      else
+      {
         res = plazas_restantes;
       }
     }
@@ -657,6 +646,54 @@ void BuscarRecorridosBaratos(T_RECORRIDO v_rec[], int num_rec, T_AVION v_av[], i
   return;
 }
 
+//NUEVO EN LA PRACTICA 12
+void MostrarArchivoVentas(FILE *pfv)
+{
+  int check = 1;
+  T_VENTA venta;
+  fseek(pfv, 0, SEEK_SET);
+  do
+  {
+    check = fread(&venta, sizeof(T_VENTA), 1, pfv);
+    if (check > 0)
+    {
+      MostrarVenta(venta);
+    }
+  } while (check > 0);
+  return;
+}
+
+int ObtenerTarjetas(FILE *pfv, int id_venta, int *posicion_venta)
+{
+  int check = 1;
+  int cont;
+  T_VENTA venta;
+  cont = 0;
+  *posicion_venta = -1;
+  fseek(pfv, 0, SEEK_SET);
+  do
+  {
+    check = fread(&venta, sizeof(T_VENTA), 1, pfv);
+    
+    if (check > 0 && id_venta == venta.id_venta)
+    {
+      if (venta.tarjeta_embarque != 1)
+      {
+        venta.tarjeta_embarque = 1;
+        *posicion_venta = cont;
+        fseek(pfv, cont * sizeof(T_VENTA), SEEK_SET);
+        fwrite(&venta, sizeof(T_VENTA), 1, pfv);
+      }
+      else
+      {
+        *posicion_venta = -2;
+      }
+    }
+    cont++;
+  } while (check > 0 && *posicion_venta == -1);
+  return *posicion_venta;
+}
+
 //FUNCIONES NO OBLIGATORIAS
 void AsignarRecorridoTemprano(T_RECORRIDO *rec_temprano, T_RECORRIDO recorrido, int *hora_temprano, int *minuto_temprano)
 {
@@ -677,13 +714,15 @@ int menu(void)
     puts("3 - Mostrar recorridos para origen/destino");
     puts("4 - Venta de billetes");
     puts("5 - Mostrar recorridos baratos");
-    puts("6 - Salir");
+    puts("6 - Mostrar Ventas");
+    puts("7 - Obtener tarjetas embarque");
+    puts("8 - Salir");
     PedirInt("", &opcion);
-    if (opcion < 0 || opcion > 6)
+    if (opcion < 0 || opcion > 8)
     {
       puts("ERROR: Opcion incorrecta");
     }
-  } while (opcion < 0 || opcion > 6);
+  } while (opcion < 0 || opcion > 8);
   return opcion;
 }
 
